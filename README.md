@@ -5,6 +5,7 @@ The LulzGradient printer uses the 'G1 X Y Z E A B' G-code format
 supported by Marlin firmware
 
 Example Laser G-code:  
+ON S182  
 G1 X107.80  
 ON S184  
 G1 X108.10  
