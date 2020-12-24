@@ -5,6 +5,7 @@ import math
 ##########################################
 flow_rate = .01  # flow rate
 E_value = 0  # starting extrusion position
+ratio_calib = 0  # adjusts ratio to favor A (negative) or B (positive) -255:255
 mem_line = ""
 mem_X = 0
 mem_Y = 0
@@ -58,7 +59,7 @@ for line in f:
         mem_Z = float(Z)
 
         if "ON" in mem_line:
-            S_value = int(mem_line.replace("ON S", ""))
+            S_value = int(mem_line.replace("ON S", "")) + ratio_calib
 
             AB_ratio = " E" + str(round(E_value, 3)) + \
                        " A" + str(round(1 - (S_value / 255), 3)) + \
