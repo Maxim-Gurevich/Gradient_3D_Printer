@@ -59,7 +59,8 @@ for line in f:
         mem_Z = float(Z)
 
         if "ON" in mem_line:
-            S_value = int(mem_line.replace("ON S", "")) + ratio_calib
+            S_value = min(max(int(mem_line.replace("ON S", "")) +
+                              ratio_calib, 0), 255)
 
             AB_ratio = " E" + str(round(E_value, 3)) + \
                        " A" + str(round(1 - (S_value / 255), 3)) + \
