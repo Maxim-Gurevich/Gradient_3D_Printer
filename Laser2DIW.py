@@ -9,6 +9,8 @@ ratio_calib = 0  # adjusts ratio to favor A (negative) or B (positive) -255:255
 prime = [['5', '5', '0'], ['200', '5', '0'],  # coordinates of high pressure prime line
          ['200', '10', '0'], ['5', '10', '0']]  # coordinates of nominal pressure prime line
 prime_f = '2400'  # G1 F value for prime lines
+
+
 ##########################################
 # initialize remaining values
 ##########################################
