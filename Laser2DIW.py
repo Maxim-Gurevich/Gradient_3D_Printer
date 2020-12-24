@@ -82,7 +82,7 @@ for line in f:  # parses through line by line
 
         elif 'OFF' in mem_line:  # pure movement (no extrusion)
             print(line.strip() + mem_line.replace('OFF', ''))
-            break
+
     elif 'G90' in mem_line:  # G90 appears right before the main print
         print('G1' + prime_f)
         for num in range(2):  # repeats twice, once per prime line
