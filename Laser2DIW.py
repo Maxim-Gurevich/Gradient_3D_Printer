@@ -9,6 +9,7 @@ ratio_calib = 0  # adjusts ratio to favor A (negative) or B (positive) -255:255
 prime = [['5', '5', '0'], ['200', '5', '0'],  # coordinates of high pressure prime line
          ['200', '10', '0'], ['5', '10', '0']]  # coordinates of nominal pressure prime line
 prime_f = '2400'  # G1 F value for prime lines
+depressurization_extruder_distance = 10  # positive value
 
 ##########################################
 # initialize remaining values
@@ -20,7 +21,7 @@ mem_Y = 0
 mem_Z = 0
 
 ##########################################
-# import file
+# open original file
 ##########################################
 f = open(r'C:\\Users\max_g\Pictures\image.gcode', 'r')
 
@@ -116,7 +117,7 @@ for line in f:  # parses through line by line
 ##########################################
 # add end code
 ##########################################
-E_value = max(0, E_value - 10)
+E_value = max(0, E_value - depressurization_extruder_distance)
 print('G0 Z10 E' + str(round(E_value, 3)))
 print('G0 X0 Y0')
 
