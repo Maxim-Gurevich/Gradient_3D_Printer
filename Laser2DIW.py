@@ -83,7 +83,7 @@ for line in f:  # parses through line by line
         mem_Z = float(Z)
 
     elif 'G90' in mem_line:  # G90 appears right before the main print
-        print('G1' + prime_f)
+        print('G1' + prime_f)  # manually sets feed rate
         for num in range(2):  # repeats twice, once per prime line
             n = num * 2
             #  get in position to start line
