@@ -83,11 +83,11 @@ for line in f:  # parses through line by line
             AB_ratio = ' E' + str(round(E_value, 3)) + \
                        ' A' + str(round(1 - (S_value / 255), 3)) + \
                        ' B' + str(round(S_value / 255, 3))
-            print(line.strip() + AB_ratio)
+            # print(line.strip() + AB_ratio)
             s.write(line.strip() + AB_ratio + '\n')
 
         elif 'OFF' in mem_line:  # pure movement (no extrusion)
-            print(line.strip() + mem_line.replace('OFF', ''))
+            # print(line.strip() + mem_line.replace('OFF', ''))
             s.write(line.strip() + mem_line.replace('OFF', '') + '\n')
 
         # remember current position
@@ -96,13 +96,13 @@ for line in f:  # parses through line by line
         mem_Z = float(Z)
 
     elif 'G90' in mem_line:  # G90 appears right before the main print
-        print('G1 ' + prime_f)  # manually sets feed rate
+        # print('G1 ' + prime_f)  # manually sets feed rate
         s.write('G1 ' + prime_f + '\n')
 
         for num in range(2):  # repeats twice, once per prime line
             n = num * 2
             #  get in position to start line
-            print('G0 X' + prime[n][0] + ' Y' + prime[n][1] + ' Z' + prime[n][2])
+            # print('G0 X' + prime[n][0] + ' Y' + prime[n][1] + ' Z' + prime[n][2])
             s.write('G0 X' + prime[n][0] + ' Y' + prime[n][1] +
                     ' Z' + prime[n][2] + '\n')
             mem_X = float(prime[n][0])
@@ -117,8 +117,8 @@ for line in f:  # parses through line by line
                 E_value += distance * flow_rate
 
             # extrude the line
-            print('G1 X' + prime[n + 1][0] + ' Y' + prime[n + 1][1] + ' E' +
-                  str(E_value) + ' A0.5 B0.5')
+            # print('G1 X' + prime[n + 1][0] + ' Y' + prime[n + 1][1] + ' E' +
+            #       str(E_value) + ' A0.5 B0.5')
             s.write('G1 X' + prime[n + 1][0] + ' Y' + prime[n + 1][1] + ' E' +
                     str(E_value) + ' A0.5 B0.5' + '\n')
 
@@ -126,12 +126,12 @@ for line in f:  # parses through line by line
             # because the stepper motors have skipped steps
             if num == 0:
                 E_value = 0
-                print('G92 E0')
+                # print('G92 E0')
                 s.write('G92 E0' + '\n')
 
     elif ('G1' not in line) and ('OFF' not in line) and \
             ('ON' not in line) and ('G0' not in line):  # everything else
-        print(line)
+        # print(line)
         s.write(line + '\n')
 
     # the line is remembered to enable combining two lines into one
@@ -141,8 +141,8 @@ for line in f:  # parses through line by line
 # add end code
 ##########################################
 E_value = max(0, E_value - depressurization_extruder_distance)
-print('G0 Z10 E' + str(round(E_value, 3)))
-print('G0 X0 Y0')
+# print('G0 Z10 E' + str(round(E_value, 3)))
+# print('G0 X0 Y0')
 s.write('G0 Z10 E' + str(round(E_value, 3)) + '\n')
 s.write('G0 X0 Y0' + '\n')
 
