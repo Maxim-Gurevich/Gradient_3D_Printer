@@ -149,7 +149,15 @@ s.write('G0 X0 Y0' + '\n')
 ##########################################
 # implement extrusion delay
 ##########################################
-
+# after the second prime line, each new extrusion command needs to be pushed back
+# to occur at a specified E value
+    # if "E" in the line, take the following value and subtract the specified amount
+        # find the line where that E value occurs
+            # else, duplicate the command
+                # change the first X Y Z to desired values
+                    # a tiny bit of math
+                # change the ratios of all following commands (including duplicate)
+    # else, just import the line
 
 ##########################################
 # close/save files
