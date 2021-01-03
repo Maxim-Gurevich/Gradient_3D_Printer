@@ -150,9 +150,8 @@ s.write('G0 X0 Y0' + '\n')
 # implement extrusion delay
 ##########################################
 s.seek(0)  # navigate to the top of the file
-G_code = list(enumerate(s))  # store the file as nx2 list: ('line number', 'content')
-
-print(G_code[4000][1])
+G_code = list(enumerate(s))  # store as Nx2 list: ('line number', 'content')
+s.truncate(0)  # erase the contents of the file
 # after the second prime line, each new extrusion command needs to be pushed back
 # to occur at a specified E value
     # if "E" in the line, take the following value and subtract the specified amount
