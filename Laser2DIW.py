@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 ##########################################
-# user defined parameters
+# user-defined parameters
 ##########################################
 flow_rate = .01  # flow rate
 flow_rate_p = .1  # high-pressure prime flow rate
@@ -12,7 +12,7 @@ prime = [['5', '5', '0'], ['200', '5', '0'],  # high pressure prime line xyz
          ['200', '10', '0'], ['5', '10', '0']]  # nominal pressure prime line xyz
 prime_f = '2400'  # G1 F value for prime lines
 depressurization_extruder_distance = 10  # positive value, applied at end of print
-
+extrusion_delay = 1  # positive value, units of extrusion distance
 ##########################################
 # initialize remaining values
 ##########################################
@@ -75,7 +75,7 @@ for line in f:  # parses through line by line
         else:
             Z = float(Z)
 
-        if 'ON' in mem_line:  # convert S command to E A B
+        if 'ON' in mem_line and 'S1\n' not in mem_line:  # convert S to E A B
             distance = dist(X, Y, Z, mem_X, mem_Y, mem_Z)
             E_value += distance * flow_rate
             S_value = min(max(int(mem_line.replace('ON S', '')) +
@@ -86,9 +86,9 @@ for line in f:  # parses through line by line
             # print(line.strip() + AB_ratio)
             s.write(line.strip() + AB_ratio + '\n')
 
-        elif 'OFF' in mem_line:  # pure movement (no extrusion)
-            # print(line.strip() + mem_line.replace('OFF', ''))
-            s.write(line.strip() + mem_line.replace('OFF', '') + '\n')
+        elif ('OFF' in mem_line) or ('S1\n' in mem_line):  # no extrusion
+            # print(line.strip())
+            s.write(line.strip() + '\n')
 
         # remember current position
         mem_X = float(X)
@@ -132,7 +132,7 @@ for line in f:  # parses through line by line
     elif ('G1' not in line) and ('OFF' not in line) and \
             ('ON' not in line) and ('G0' not in line):  # everything else
         # print(line)
-        s.write(line + '\n')
+        s.write(line.strip() + '\n')
 
     # the line is remembered to enable combining two lines into one
     mem_line = line
@@ -150,18 +150,31 @@ s.write('G0 X0 Y0' + '\n')
 # implement extrusion delay
 ##########################################
 s.seek(0)  # navigate to the top of the file
-G_code = list(enumerate(s))  # store as Nx2 list: ('line number', 'content')
-s.truncate(0)  # erase the contents of the file
-# after the second prime line, each new extrusion command needs to be pushed back
-# to occur at a specified E value
-    # if "E" in the line, take the following value and subtract the specified amount
-        # find the line where that E value occurs
-            # check lines one at a time by scrolling down the file until position
-            # is one less that previous
-            # duplicate the command
-                # change the first X Y Z to desired values
-                    # a tiny bit of math
-                # change the ratios of all following commands (including duplicate)
+G_code = list(s)  # store as list of lines for easier navigation
+# s.truncate(0)  # erase the contents of the file
+
+mem_E = 0  # initialize extrusion value
+for item in G_code[0:100]:
+    if ('G0' not in item) and ('G1' not in item):
+        print(item.strip())
+    elif 'E' in item:
+        E_pos = item[item.find('E') + 1:item.find(' ', item.find('E'))]
+        E_target = float(E_pos) - extrusion_delay
+        if (E_target > 0) and (E_pos != mem_E):
+            mem_E = E_pos
+            for count, mem in enumerate(G_code[item.index():0]):
+                if float(mem[mem.find('E') + 1:mem.find(' ', mem.find('E'))]) \
+                        < E_target:
+                    split_line_pos = item.index()-count
+                    break
+        #next stuff
+
+        # find the line where that E value occurs unless it is negative
+        # check lines one at a time by scrolling up the file from position
+        # duplicate the command
+        # change the first X Y Z to desired values
+        # a tiny bit of math
+        # change the ratios of all following commands (including duplicate)
     # else, just import the line
 
 ##########################################
