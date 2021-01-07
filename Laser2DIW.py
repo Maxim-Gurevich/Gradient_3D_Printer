@@ -150,27 +150,30 @@ s.write('G0 X0 Y0' + '\n')
 # implement extrusion delay
 ##########################################
 s.seek(0)  # navigate to the top of the file
-G_code = list(s)  # store as list of lines for easier navigation
-# s.truncate(0)  # erase the contents of the file
+G_code = list(s)  # store as list of lines for easier modification
 
-mem_E = 0  # initialize extrusion value
-for item in G_code[0:100]:
-    if ('G0' not in item) and ('G1' not in item):
-        print(item.strip())
-    elif 'E' in item:
-        E_pos = item[item.find('E') + 1:item.find(' ', item.find('E'))]
-        E_target = float(E_pos) - extrusion_delay
-        if (E_target > 0) and (E_pos != mem_E):
-            mem_E = E_pos
-            for count, mem in enumerate(G_code[item.index():0]):
-                if float(mem[mem.find('E') + 1:mem.find(' ', mem.find('E'))]) \
-                        < E_target:
-                    split_line_pos = item.index()-count
+mem_A = .5  # initialize extrusion value
+for line in s:  # iterate line by line
+    if ('G0' not in line) and ('G1' not in line):
+        print(line.strip())
+    elif 'A' in line:
+        A_value = float(line[line.find('A') + 1:line.find(' ', line.find('A'))])
+        E_pos = float(line[line.find('E') + 1:line.find(' ', line.find('E'))])
+        E_target = E_pos - extrusion_delay
+        if (E_target > 0) and (A_value != mem_A):  # ratio change detected
+            mem_A = A_value
+            for item in G_code:
+                if float(item[item.find('E') + 1:item.find(' ', item.find('E'))]) \
+                        > E_target:
+                    ind = G_code.index(item)
+                    start_point =  # where the previous move ended (G_code[ind-1])
+                    new_end_point =  # point in between start and end
+                    new_ratio =
+                    line_1 = item.replace(old_text, new_text_1)
+                    line_2 = item.replace(old_text, new_text_2)
                     break
-        #next stuff
-
-        # find the line where that E value occurs unless it is negative
-        # check lines one at a time by scrolling up the file from position
+        else:  # if the ratio is same as previous or it's too early
+            print(line.strip())
         # duplicate the command
         # change the first X Y Z to desired values
         # a tiny bit of math
