@@ -42,6 +42,9 @@ s = open(save_file_path + '.gcode', 'x+')
 def dist(x, y, z, x2, y2, z2):  # 3d euclidean distance
     return math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2)
 
+def extract(string, letter):  # returns string of value associated with the letter
+    return string[string.find(letter) + 1:
+                       string.find(' ', string.find(letter))]
 
 ##########################################
 # add prime lines (high pressure and nominal pressure)
@@ -53,12 +56,9 @@ for line in f:  # parses through line by line
     if ('G1 ' in line) or ('G0 ' in line):  # how to process movement commands
 
         # Update the target location
-        X = line[line.find('X') + 1:
-                 line.find(' ', line.find('X'))]
-        Y = line[line.find('Y') + 1:
-                 line.find(' ', line.find('Y'))]
-        Z = line[line.find('Z') + 1:
-                 line.find(' ', line.find('Z'))]
+        X = extract(line, 'X')
+        Y = extract(line, 'Y')
+        Z = extract(line, 'Z')
 
         # if there is no new info on X Y or Z data, use previous data
         # check for 'G' because one will appear if line.find is unsuccessful
@@ -157,20 +157,20 @@ for line in s:  # iterate line by line
     if ('G0' not in line) and ('G1' not in line):
         print(line.strip())
     elif 'A' in line:
-        A_value = float(line[line.find('A') + 1:line.find(' ', line.find('A'))])
-        E_pos = float(line[line.find('E') + 1:line.find(' ', line.find('E'))])
+        A_value = float(extract(line, 'A'))
+        E_pos = float(extract(line, 'E'))
         E_target = E_pos - extrusion_delay
         if (E_target > 0) and (A_value != mem_A):  # ratio change detected
             mem_A = A_value
             for item in G_code:
-                if float(item[item.find('E') + 1:item.find(' ', item.find('E'))]) \
-                        > E_target:
+                if float(extract(item, 'E')) > E_target:  # search until target
                     ind = G_code.index(item)
-                    start_point =  # where the previous move ended (G_code[ind-1])
-                    new_end_point =  # point in between start and end
-                    new_ratio =
-                    line_1 = item.replace(old_text, new_text_1)
-                    line_2 = item.replace(old_text, new_text_2)
+                    start_point = G_code[ind-1][X,Y,Z,E,A,B]  # where the previous move ended (G_code[ind-1])
+                    old_end_point = item[X,Y,Z,E,A,B]
+                    # some calculation necessary here
+                    new_end_point = [X,Y,Z,E,A,B]  # point in between start and end
+                    line_1 =  # construction of proper string given data
+                    line_2 =  # construction of proper string given data
                     break
         else:  # if the ratio is same as previous or it's too early
             print(line.strip())
