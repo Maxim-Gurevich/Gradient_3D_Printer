@@ -164,21 +164,19 @@ for line in s:  # iterate line by line
             mem_A = A_value
             for item in G_code:
                 if float(extract(item, 'E')) > E_target:  # search until target
-                    ind = G_code.index(item)
+                    ind = G_code.index(item)  # determine the location of target
+                    # next order of business, fulfil next two lines
                     start_point = G_code[ind-1][X,Y,Z,E,A,B]  # where the previous move ended (G_code[ind-1])
                     old_end_point = item[X,Y,Z,E,A,B]
                     # some calculation necessary here
                     new_end_point = [X,Y,Z,E,A,B]  # point in between start and end
                     line_1 =  # construction of proper string given data
                     line_2 =  # construction of proper string given data
+                    # then insert the new lines into the list
+                    # change the ratios of all following commands
                     break
         else:  # if the ratio is same as previous or it's too early
-            print(line.strip())
-        # duplicate the command
-        # change the first X Y Z to desired values
-        # a tiny bit of math
-        # change the ratios of all following commands (including duplicate)
-    # else, just import the line
+            print(line.strip())  # just import the line
 
 ##########################################
 # close/save files
