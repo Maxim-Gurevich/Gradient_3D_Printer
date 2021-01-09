@@ -42,9 +42,11 @@ s = open(save_file_path + '.gcode', 'x+')
 def dist(x, y, z, x2, y2, z2):  # 3d euclidean distance
     return math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2)
 
+
 def extract(string, letter):  # returns string of value associated with the letter
     return string[string.find(letter) + 1:
-                       string.find(' ', string.find(letter))]
+                  string.find(' ', string.find(letter))]
+
 
 ##########################################
 # add prime lines (high pressure and nominal pressure)
@@ -154,29 +156,34 @@ G_code = list(s)  # store as list of lines for easier modification
 
 mem_A = .5  # initialize extrusion value
 for line in s:  # iterate line by line
-    if ('G0' not in line) and ('G1' not in line):
-        print(line.strip())
-    elif 'A' in line:
+    if ('A' in line) and ('G0' not in line) and ('G1' not in line):
         A_value = float(extract(line, 'A'))
         E_pos = float(extract(line, 'E'))
         E_target = E_pos - extrusion_delay
         if (E_target > 0) and (A_value != mem_A):  # ratio change detected
             mem_A = A_value
             for item in G_code:
-                if float(extract(item, 'E')) > E_target:  # search until target
-                    ind = G_code.index(item)  # determine the location of target
-                    # next order of business, fulfil next two lines
-                    start_point = G_code[ind-1][X,Y,Z,E,A,B]  # where the previous move ended (G_code[ind-1])
-                    old_end_point = item[X,Y,Z,E,A,B]
-                    # some calculation necessary here
-                    new_end_point = [X,Y,Z,E,A,B]  # point in between start and end
-                    line_1 =  # construction of proper string given data
-                    line_2 =  # construction of proper string given data
-                    # then insert the new lines into the list
-                    # change the ratios of all following commands
-                    break
-        else:  # if the ratio is same as previous or it's too early
-            print(line.strip())  # just import the line
+                if (('G0' in item) or ('G1' in item)) and (' E' in item):
+                    if float(extract(item, 'E')) > E_target:  # search until target
+                        ind = G_code.index(item)  # determine the location of target
+                        start_point = []
+                        old_end_point = []
+                        for i in ['X', 'Y', 'Z', 'E', 'A']:
+                            # data of the previous move
+                            start_point.append(extract(G_code[ind - 1], i))
+                            # data of move to be changed
+                            old_end_point.append(extract(G_code[ind], i))
+                            proportion = (old_end_point[3] - start_point[3]) / \
+                                         (new_end_point[3] - start_point[3])
+
+                        new_end_point = [X, Y, Z, E, A, B]  # point in between start and end
+                        line_1 =  # construction of proper string given data
+                        line_2 =  # construction of proper string given data
+                        # then insert the new lines into the list
+                        # change the ratios of all following commands
+                        break
+    else:  # if the line does not need attention, just pass it through
+        print(line.strip())
 
 ##########################################
 # close/save files
