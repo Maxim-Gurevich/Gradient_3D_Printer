@@ -162,20 +162,31 @@ for line in s:  # iterate line by line
         E_target = E_pos - extrusion_delay
         if (E_target > 0) and (A_value != mem_A):  # ratio change detected
             mem_A = A_value
+            start_point = ['0', '0', '0', '0', '0']  # reset X Y Z E B
             for item in G_code:
                 if (('G0' in item) or ('G1' in item)) and (' E' in item):
                     if float(extract(item, 'E')) > E_target:  # search until target
                         ind = G_code.index(item)  # determine the location of target
                         start_point = []
                         old_end_point = []
-                        for i in ['X', 'Y', 'Z', 'E', 'A']:
-                            # data of the previous move
-                            start_point.append(extract(G_code[ind - 1], i))
-                            # data of move to be changed
-                            old_end_point.append(extract(G_code[ind], i))
-                            proportion = (old_end_point[3] - start_point[3]) / \
-                                         (new_end_point[3] - start_point[3])
+                        #  investigate the previous state of the printer
+                        for num, i in enumerate(['X', 'Y', 'Z', 'E', 'B']):
+                            found = False
+                            offset = 1  # begin search with previous line
+                            while not found:  # search until found
+                                term = extract(G_code[ind - offset], i)
+                                if 'G' not in term:
+                                    found = True
+                                elif ind - offset <= 0:
+                                    raise RuntimeError('infinite while loop')
+                                else:
+                                    offset += 1
+                            start_point[num] = term
 
+                        # data of move to be changed
+                        old_end_point.append(extract(G_code[ind], i))
+                        proportion = (old_end_point[3] - start_point[3]) / \
+                                     (new_end_point[3] - start_point[3])
                         new_end_point = [X, Y, Z, E, A, B]  # point in between start and end
                         line_1 =  # construction of proper string given data
                         line_2 =  # construction of proper string given data
