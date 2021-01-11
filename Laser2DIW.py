@@ -152,11 +152,13 @@ s.write('G0 X0 Y0' + '\n')
 # implement extrusion delay
 ##########################################
 s.seek(0)  # navigate to the top of the file
-G_code = list(s)  # store as list of lines for easier modification
+# G_code = list(s)  # store as list of lines for easier modification
+G_code = []
 
 mem_A = .5  # initialize extrusion value
 for line in s:  # iterate line by line
-    if ('A' in line) and ('G0' not in line) and ('G1' not in line):
+    G_code.append(line)  # build up result
+    if ('A' in line) and (('G0' in line) or ('G1' in line)):
         A_value = float(extract(line, 'A'))
         E_pos = float(extract(line, 'E'))
         E_target = E_pos - extrusion_delay
@@ -166,11 +168,14 @@ for line in s:  # iterate line by line
             for item in G_code:
                 if (('G0' in item) or ('G1' in item)) and (' E' in item):
                     if float(extract(item, 'E')) > E_target:  # search until target
+                        # the target line has been found and now needs to be split
+                        # into two lines to sneak in an extrusion change at the
+                        # proper moment
                         ind = G_code.index(item)  # determine the location of target
-                        start_point = []
-                        old_end_point = []
+                        start_point = []  # start of move to be split
+                        end_point = []  # end of move to be split
                         #  investigate the previous state of the printer
-                        for num, i in enumerate(['X', 'Y', 'Z', 'E', 'B']):
+                        for i in ['X', 'Y', 'Z', 'E', 'B']:
                             found = False
                             offset = 1  # begin search with previous line
                             while not found:  # search until found
@@ -181,18 +186,51 @@ for line in s:  # iterate line by line
                                     raise RuntimeError('infinite while loop')
                                 else:
                                     offset += 1
-                            start_point[num] = term
+                            start_point.append(term)
+                            # data of move to be split
+                            end_point.append(extract(G_code[ind], i))
 
-                        # data of move to be changed
-                        old_end_point.append(extract(G_code[ind], i))
-                        proportion = (old_end_point[3] - start_point[3]) / \
-                                     (new_end_point[3] - start_point[3])
-                        new_end_point = [X, Y, Z, E, A, B]  # point in between start and end
-                        line_1 =  # construction of proper string given data
-                        line_2 =  # construction of proper string given data
+                        #  proportion of distance derived from extrusion values
+                        prop = ((E_target - float(start_point[3])) /
+                                (float(end_point[3]) -
+                                 float(start_point[3])))
+
+                        # the following lines construct line_1
+                        # this line maintains the current AB ratio and
+                        # stops at the point of ratio change
+                        if 'G' not in end_point[0]:
+                            line_1 = 'G1 X' + str(float(end_point[0] * prop))
+                        else:
+                            line_1 = 'G1'
+                        if 'G' not in end_point[1]:
+                            line_1.extend(' Y' +
+                                          str(float(end_point[1] * prop)))
+                        if 'G' not in end_point[2]:
+                            line_1.extend(' Z' +
+                                          str(float(end_point[2] * prop)))
+                        line_1.extend(' E' + E_target)
+                        line_1.extend(' A' + str(1-float(start_point[4])))
+                        line_1.extend(' B' + start_point[4])
+
+                        # the following lines construct line_2
+                        # this line finishes the original move with
+                        # a new ratio brought over from the primary for loop (mem_A)
+                        if 'G' not in end_point[0]:
+                            line_2 = 'G1 X' + end_point[0]
+                        else:
+                            line_2 = 'G1'
+                        if 'G' not in end_point[1]:
+                            line_2.extend(' Y' + end_point[1])
+                        if 'G' not in end_point[2]:
+                            line_2.extend(' Z' + end_point[2])
+                        line_2.extend(' E' + end_point[3])
+                        line_2.extend(' A' + str(mem_A))
+                        line_2.extend(' B' + str(1 - mem_A))
+
+
                         # then insert the new lines into the list
                         # change the ratios of all following commands
-                        break
+                        break  # exit loop now that the iterable has been modified
     else:  # if the line does not need attention, just pass it through
         print(line.strip())
 
