@@ -12,7 +12,7 @@ prime = [['5', '5', '0'], ['200', '5', '0'],  # high pressure prime line xyz
          ['200', '10', '0'], ['5', '10', '0']]  # nominal pressure prime line xyz
 prime_f = '2400'  # G1 F value for prime lines
 depressurization_extruder_distance = 10  # positive value, applied at end of print
-extrusion_delay = 1  # positive value, units of extrusion distance
+extrusion_delay = .01  # positive value, units of extrusion distance
 ##########################################
 # initialize remaining values
 ##########################################
@@ -156,47 +156,45 @@ G_code = []
 past_prime = False
 mem_A = .5  # initialize extrusion value
 start = 0
+store = []
+E_pos = 0
 for line in s:  # iterate line by line
     G_code.append(line)  # build up result
     if ('A' in line) and (('G0' in line) or ('G1' in line)):
         A_value = float(extract(line, 'A'))
-        E_pos = float(extract(line, 'E'))
         E_target = E_pos - extrusion_delay
         if (E_target > 0) and (A_value != mem_A):  # ratio change detected
             mem_A = A_value
-            start_point = ['0', '0', '0', '0', '0']  # reset X Y Z E B
-            for item in G_code[start:]:
+            for item in G_code:
                 if 'G92' in item:
                     past_prime = True
-                    start = G_code.index(item)
-                if (('G0' in item) or ('G1' in item)) and (' E' in item) and \
+                if (('G0' in item) or ('G1' in item)) and (' A' in item) and \
                         (float(extract(item, 'E')) > E_target) and past_prime:
                     # the target line has been found and now needs to be split
                     # into two lines to sneak in an extrusion change at the
                     # proper moment
                     ind = G_code.index(item)  # determine the location of target
-                    print(ind)
-                    print(start)
                     start_point = []  # start of move to be split
                     end_point = []  # end of move to be split
                     #  investigate the previous state of the printer
-                    for i in ['X', 'Y', 'Z', 'E', 'A']:
+                    for q, i in enumerate(['X', 'Y', 'Z', 'E', 'A']):
                         found = False
                         offset = 1  # begin search with previous line
-                        term = ''
-                        while not found:  # search until found
-                            term = extract(G_code[ind - offset], i)
+                        term = '0'
+                        end_point.append(extract(G_code[ind], i))
+                        # search until found
+                        while (not found) and ('G' not in end_point[q]):
+                            if ind - offset >= 0:
+                                term = extract(G_code[ind - offset], i)
+                            else:
+                                term = extract(store[0 - offset + ind], i)
+
                             if 'G' not in term:
                                 found = True
-                            elif ind - offset <= 0:
-                                raise RuntimeError('infinite while loop')
                             else:
                                 offset += 1
-                                print('oops')
+
                         start_point.append(term)
-                        # data of move to be split
-                        end_point.append(extract(G_code[ind], i))
-                        print(start_point)
                     #  proportion of distance derived from extrusion values
                     prop = ((E_target - float(start_point[3])) /
                             (float(end_point[3]) -
@@ -213,37 +211,49 @@ for line in s:  # iterate line by line
                     for count, letter in enumerate([' X', ' Y', ' Z']):
                         #  only include necessary coordinate data
                         if 'G' not in end_point[count]:
-                            move = (float(start_point[count]) +
-                                    (float(end_point[count]) -
-                                     float(start_point[count])) * prop)
+                            move = round(float(start_point[count]) +
+                                         ((float(end_point[count]) -
+                                           float(start_point[count])) * prop), 3)
                             line_1 += letter + str(move)
                             line_2 += letter + end_point[count]
 
-                    line_1 += ' E' + str(E_target)
-                    line_1 += ' A' + start_point[4]
-                    line_1 += ' B' + str(1 - float(start_point[4]))
+                    line_1 += ' E' + str(round(E_target, 3))
+                    line_1 += ' A' + end_point[4]
+                    line_1 += ' B' + str(round(1 - float(end_point[4]), 3))
 
                     line_2 += ' E' + end_point[3]
                     line_2 += ' A' + str(A_value)
-                    line_2 += ' B' + str(1 - A_value)
+                    line_2 += ' B' + str(round((1 - A_value), 3))
 
                     # change the ratios of all following commands
-                    for command in G_code[ind:]:
-                        if 'G' not in extract(command, 'A'):
-                            command.replace('A' + extract(command, 'A'),
-                                            'A' + str(A_value))
-                            command.replace('B' + extract(command, 'B'),
-                                            'B' + str(1 - A_value))
+                    for u in range(ind, len(G_code)):
+                        if 'G' not in extract(G_code[u], 'A'):
+                            G_code[u] = G_code[u].replace(
+                                'A' + extract(G_code[u], 'A'),
+                                'A' + str(A_value))
+                            G_code[u] = G_code[u].replace(
+                                'B' + extract(G_code[u], 'B'),
+                                'B' + str(round((1 - A_value), 3)))
 
                     # insert the new lines into the list
                     G_code.pop(ind)
                     G_code.insert(ind, line_1)
                     G_code.insert(ind + 1, line_2)
-                    start = ind
+
+                    for r in range(ind):
+                        store.append(G_code.pop(0).rstrip())
                     break  # exit for loop
-# save G_code to s file
-for line in G_code:
-    print(line)
+
+        E_pos = float(extract(line, 'E'))
+        print(E_pos)
+
+for t in G_code:
+    store.append(t.rstrip())
+s.truncate(0)
+s.seek(0)
+for line in store:
+    print(line.strip() + '\n')
+    s.write(line.strip() + '\n')
 ##########################################
 # close/save files
 ##########################################
