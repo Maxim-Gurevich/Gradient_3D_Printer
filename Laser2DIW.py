@@ -252,7 +252,6 @@ for t in G_code:
 s.truncate(0)
 s.seek(0)
 for line in store:
-    print(line.strip() + '\n')
     s.write(line.strip() + '\n')
 ##########################################
 # close/save files
