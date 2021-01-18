@@ -6,33 +6,39 @@ from tkinter import filedialog
 # user-defined parameters
 ##########################################
 flow_rate = .01  # flow rate
-flow_rate_p = .1  # high-pressure prime flow rate
+flow_rate_p = 10  # high-pressure prime flow rate
 ratio_calib = 0  # adjusts ratio to favor A (negative) or B (positive) -255:255
 prime = [['5', '5', '0'], ['200', '5', '0'],  # high pressure prime line xyz
          ['200', '10', '0'], ['5', '10', '0']]  # nominal pressure prime line xyz
 prime_f = '2400'  # G1 F value for prime lines
-depressurization_extruder_distance = 10  # positive value, applied at end of print
+depressurization_extruder_distance = 1000  # positive value, applied at end of print
 extrusion_delay = .01  # positive value, units of extrusion distance
+res_decrease = 4  # how many raster scan lines to skip at a time
 ##########################################
 # initialize remaining values
 ##########################################
 E_value = 0  # starting extrusion position
-mem_line = ''
+mem_line = ''  # mem_line is needed to combine two consecutive lines into one
+# keep track of position for extrusion distance calculation
 mem_X = 0
 mem_Y = 0
 mem_Z = 0
-
+scan_number = 0
 ##########################################
 # open original file
 # saveas new file
 ##########################################
+# set up tkinter, the GUI python module
 root = tk.Tk()
 root.withdraw()
+# get input from user about what file to open
 open_file_path = filedialog.askopenfilename(title="Select original G-code file"
                                                   " to convert")
-f = open(open_file_path, 'r')
+f = open(open_file_path, 'r')  # open the file
+# get input about save location and
 save_file_path = filedialog.asksaveasfilename(title="SaveAs new converted G-code"
                                                     " file")
+# create a new file, adding '.gcode' at the end
 s = open(save_file_path + '.gcode', 'x+')
 
 
@@ -43,7 +49,9 @@ def dist(x, y, z, x2, y2, z2):  # 3d euclidean distance
     return math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2)
 
 
+#  this function is used extensively to read G-code
 def extract(string, thing):  # returns string of value associated with the letter
+    #  the characters immediately after the 'thing' are returned
     return string[string.find(thing) + 1:
                   string.find(' ', string.find(thing))]
 
@@ -55,6 +63,14 @@ def extract(string, thing):  # returns string of value associated with the lette
 # convert S command to E, A, and B
 ##########################################
 for line in f:  # parses through line by line
+    # optional vertical resolution decrease
+    if (('G1 ' in line) or ('G0 ' in line)) and (' Y' in line) and res_decrease:
+        scan_number += 1
+    if scan_number < res_decrease:
+        continue  # skip over the rest of the loop and return to the top
+    else:
+        scan_number = 0
+
     if ('G1 ' in line) or ('G0 ' in line):  # how to process movement commands
 
         # Update the target location
@@ -146,7 +162,7 @@ E_value = max(0, E_value - depressurization_extruder_distance)
 # print('G0 Z10 E' + str(round(E_value, 3)))
 # print('G0 X0 Y0')
 s.write('G0 Z10 E' + str(round(E_value, 3)) + '\n')
-s.write('G0 X0 Y0' + '\n')
+# s.write('G0 X0 Y0' + '\n')
 
 ##########################################
 # implement extrusion delay
