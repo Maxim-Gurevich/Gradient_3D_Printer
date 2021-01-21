@@ -5,15 +5,15 @@ from tkinter import filedialog
 ##########################################
 # user-defined parameters
 ##########################################
-flow_rate = .01  # flow rate
-flow_rate_p = 10  # high-pressure prime flow rate
+flow_rate = .05  # flow rate
+flow_rate_p = 3  # high-pressure prime flow rate
 ratio_calib = 0  # adjusts ratio to favor A (negative) or B (positive) -255:255
 prime = [['5', '5', '0'], ['200', '5', '0'],  # high pressure prime line xyz
          ['200', '10', '0'], ['5', '10', '0']]  # nominal pressure prime line xyz
-prime_f = '2400'  # G1 F value for prime lines
+prime_f = 'F2400'  # G1 F value for prime lines
 depressurization_extruder_distance = 1000  # positive value, applied at end of print
 extrusion_delay = .01  # positive value, units of extrusion distance
-res_decrease = 4  # how many raster scan lines to skip at a time
+res_decrease = 8  # how many raster scan lines to skip at a time
 ##########################################
 # initialize remaining values
 ##########################################
@@ -23,7 +23,7 @@ mem_line = ''  # mem_line is needed to combine two consecutive lines into one
 mem_X = 0
 mem_Y = 0
 mem_Z = 0
-scan_number = 0
+scan_number = res_decrease
 ##########################################
 # open original file
 # saveas new file
@@ -64,12 +64,13 @@ def extract(string, thing):  # returns string of value associated with the lette
 ##########################################
 for line in f:  # parses through line by line
     # optional vertical resolution decrease
-    if (('G1 ' in line) or ('G0 ' in line)) and (' Y' in line) and res_decrease:
+    if ' Y' in line and 'G' in line:
         scan_number += 1
-    if scan_number < res_decrease:
-        continue  # skip over the rest of the loop and return to the top
-    else:
+    if ' Y' in line and 'G' in line and scan_number > res_decrease:
         scan_number = 0
+    elif (('G1' in line) or ('G0' in line)) and \
+            scan_number < res_decrease and res_decrease:
+        continue  # skip over the rest of the loop and return to the top
 
     if ('G1 ' in line) or ('G0 ' in line):  # how to process movement commands
 
@@ -104,9 +105,11 @@ for line in f:  # parses through line by line
             # print(line.strip() + AB_ratio)
             s.write(line.strip() + AB_ratio + '\n')
 
-        elif ('OFF' in mem_line) or ('S1\n' in mem_line):  # no extrusion
+        #elif ('OFF' in mem_line) or ('S1\n' in mem_line):  # no extrusion
+        else:
             # print(line.strip())
             s.write(line.strip() + '\n')
+
 
         # remember current position
         mem_X = float(X)
@@ -161,7 +164,7 @@ for line in f:  # parses through line by line
 E_value = max(0, E_value - depressurization_extruder_distance)
 # print('G0 Z10 E' + str(round(E_value, 3)))
 # print('G0 X0 Y0')
-s.write('G0 Z10 E' + str(round(E_value, 3)) + '\n')
+s.write('G0 Z10 E' + str(round(E_value, 3)) + 'A \n')
 # s.write('G0 X0 Y0' + '\n')
 
 ##########################################
