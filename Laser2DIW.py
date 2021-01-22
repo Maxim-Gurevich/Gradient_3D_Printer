@@ -164,7 +164,7 @@ for line in f:  # parses through line by line
 E_value = max(0, E_value - depressurization_extruder_distance)
 # print('G0 Z10 E' + str(round(E_value, 3)))
 # print('G0 X0 Y0')
-s.write('G0 Z10 E' + str(round(E_value, 3)) + 'A \n')
+s.write('G0 Z10 E' + str(round(E_value, 3)) + ' A0.5 B0.5\n')
 # s.write('G0 X0 Y0' + '\n')
 
 ##########################################
